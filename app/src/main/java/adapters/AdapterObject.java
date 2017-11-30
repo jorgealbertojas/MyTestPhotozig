@@ -60,6 +60,11 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
         this.data = data;
     }
 
+    public AdapterObject(List<Objects> data) {
+
+       this.data = data;
+    }
+
     /**
      * Cache of the children views for a forecast list item.
      */

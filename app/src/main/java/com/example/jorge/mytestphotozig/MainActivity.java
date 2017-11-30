@@ -1,6 +1,9 @@
 package com.example.jorge.mytestphotozig;
 
+import android.content.ContentResolver;
 import android.content.Context;
+import android.database.Cursor;
+import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
@@ -32,11 +35,20 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity implements AdapterObject.AdapterObjectOnClickHandler {
 
+    private final String KEY_RECYCLER_STATE = "recycler_state";
+    private final String KEY_ADAPTER_STATE = "adapter_state";
+    private final String KEY_PATH_IMAGE = "path_image";
+
     AdapterObject mAdapterObject;
     private InterfaceObject mInterfaceObject;
     private RecyclerView mRecyclerView;
     private ProgressBar mLoadingIndicator;
     private Context mContext;
+
+    private static Bundle mBundleRecyclerViewState;
+    private ArrayList<Objects> mListAdapterObject;
+    private Parcelable mListState;
+    private String mPathImage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,32 +57,51 @@ public class MainActivity extends AppCompatActivity implements AdapterObject.Ada
 
         mContext = this;
 
+         /** If savedInstanceState was Salve no necessary execute again */
+        if (savedInstanceState == null) {
         /* Init Recycle View for list ASSERTS */
-        initRecyclerView();
+            initRecyclerView();
 
-        mAdapterObject = new AdapterObject(this);
+            /* set Adapter for Recycler view */
+            mAdapterObject = new AdapterObject(this);
+
+           /* Create Bundle for salve state the activity */
+            mBundleRecyclerViewState = new Bundle();
+            Parcelable listState = mRecyclerView.getLayoutManager().onSaveInstanceState();
+            mBundleRecyclerViewState.putParcelable(KEY_RECYCLER_STATE, listState);
 
         /* Setting the adapter attaches it to the RecyclerView in our layout. */
-        mRecyclerView.setAdapter(mAdapterObject);
+            mRecyclerView.setAdapter(mAdapterObject);
 
         /* Setting the Load in our layout. */
-        mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
+            mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
 
 
         /* Verify Internet before open Json. */
-        if (FunctionCommon.isOnline(this)) {
-            createStackOverflowAPI();
-            mInterfaceObject.getObject().enqueue(objectCallback);
+            if (FunctionCommon.isOnline(this)) {
+                createStackOverflowAPI();
+                mInterfaceObject.getObject().enqueue(objectCallback);
 
-        } else {
-            Context context = getApplicationContext();
-            Toast toast = Toast.makeText(context, R.string.Error_Access, Toast.LENGTH_SHORT);
-            toast.show();
+            } else {
+                Context context = getApplicationContext();
+                Toast toast = Toast.makeText(context, R.string.Error_Access, Toast.LENGTH_SHORT);
+                toast.show();
+            }
+        }else {
+            initRecyclerView();
+
+            mListState = mBundleRecyclerViewState.getParcelable(KEY_RECYCLER_STATE);
+            mListAdapterObject = (ArrayList<Objects>) mBundleRecyclerViewState.getSerializable(KEY_ADAPTER_STATE);
+            mPathImage =  mBundleRecyclerViewState.getString(KEY_PATH_IMAGE);
+
+            mRecyclerView.getLayoutManager().onRestoreInstanceState(mListState);
+            mAdapterObject = new AdapterObject(mListAdapterObject, mPathImage);
+            mRecyclerView.setAdapter(mAdapterObject);
         }
     }
 
     /**
-     * Call Get InformationNew ASSETS .
+     * Call Get InformationNew OBJECTS .
      */
     private Callback<ListWrapper<Objects>> objectCallback = new Callback<ListWrapper<Objects>>() {
         @Override
@@ -80,9 +111,9 @@ public class MainActivity extends AppCompatActivity implements AdapterObject.Ada
                     List<Objects> data = new ArrayList<>();
 
                     data.addAll(response.body().objects);
-                    String urlImage = response.body().assetsLocation;
+                    mPathImage = response.body().assetsLocation;
 
-                    mAdapterObject= new AdapterObject(data,urlImage);
+                    mAdapterObject= new AdapterObject(data,mPathImage);
                     mRecyclerView.setAdapter(mAdapterObject);
                     mLoadingIndicator.setVisibility(View.INVISIBLE);
 
@@ -111,7 +142,9 @@ public class MainActivity extends AppCompatActivity implements AdapterObject.Ada
 
     };
 
-
+    /**
+     * Start Recycler view
+     */
     private void initRecyclerView() {
         mRecyclerView = (RecyclerView) findViewById(R.id.rv_numbers);
         mRecyclerView.setLayoutManager(new GridLayoutManager(this, numberOfColumns()));
@@ -136,6 +169,7 @@ public class MainActivity extends AppCompatActivity implements AdapterObject.Ada
     }
 
 
+    // Calc dynamic quantity column RecyclerView
     private int numberOfColumns() {
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
@@ -152,4 +186,33 @@ public class MainActivity extends AppCompatActivity implements AdapterObject.Ada
     public void onClick(Objects objects) {
 
     }
+
+
+    // save RecyclerView state
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+
+        mBundleRecyclerViewState = new Bundle();
+        mListState = mRecyclerView.getLayoutManager().onSaveInstanceState();
+        mListAdapterObject = (ArrayList<Objects>) mAdapterObject.getData();
+        mBundleRecyclerViewState.putParcelable(KEY_RECYCLER_STATE, mListState);
+        mBundleRecyclerViewState.putSerializable(KEY_ADAPTER_STATE, mListAdapterObject);
+        mBundleRecyclerViewState.putString(KEY_PATH_IMAGE, mPathImage);
+    }
+
+
+    // restore RecyclerView state
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (mBundleRecyclerViewState != null) {
+            mListState = mBundleRecyclerViewState.getParcelable(KEY_RECYCLER_STATE);
+            mListAdapterObject = (ArrayList<Objects>) mBundleRecyclerViewState.getSerializable(KEY_ADAPTER_STATE);
+
+        }
+    }
+
 }
