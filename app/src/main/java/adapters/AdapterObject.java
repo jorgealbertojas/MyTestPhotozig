@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.AppCompatButton;
@@ -13,11 +14,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.example.jorge.mytestphotozig.DetailActivity;
 import com.example.jorge.mytestphotozig.R;
 import com.squareup.picasso.Picasso;
+
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
@@ -26,7 +30,9 @@ import butterknife.OnClick;
 import downloads.DownloadService;
 import models.Objects;
 
+import static common.Utility.EXTRA_DATA;
 import static common.Utility.EXTRA_FILE_NAME;
+import static common.Utility.KEY_EXTRA_DATA;
 import static common.Utility.PERMISSION_REQUEST_CODE;
 
 /**
@@ -40,14 +46,8 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
     private String mUrlImage;
     private Context mContext;
 
-
-
-
-    /**
-     * An on-click handler that we've defined to make it easy for an Activity to interface with
-     * our RecyclerView
-     */
     private static AdapterObjectOnClickHandler mClickHandler;
+
 
 
     /**
@@ -65,13 +65,13 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
     }
 
 
-    public AdapterObject(List<Objects> data, String urlImage) {
+    public AdapterObject(ArrayList<Objects> data, String urlImage) {
 
         this.mUrlImage = urlImage;
         this.data = data;
     }
 
-    public AdapterObject(List<Objects> data) {
+    public AdapterObject(ArrayList<Objects> data) {
 
        this.data = data;
     }
@@ -90,12 +90,16 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
         @BindView(R.id.acb_download)
         AppCompatButton mDownloadAppCompatButton;
 
+        @BindView(R.id.acb_detail)
+        AppCompatButton mDetail;
+
 
 
 
         public AdapterObjectViewHolder(View view) {
             super(view);
             ButterKnife.bind(this, itemView);
+
             view.setOnClickListener(this);
         }
 
@@ -111,26 +115,31 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
         }*/
 
 
-        @OnClick(R.id.acb_download)
+
+
+        @OnClick({R.id.acb_download, R.id.acb_detail })
         public void onClick(View v) {
 
+
+            if (v.getId()== R.id.acb_detail){
+                Intent mediaIntent = new Intent(mContext, DetailActivity.class);
+                mediaIntent.putExtra(EXTRA_FILE_NAME,v.getTag().toString());
+                Bundle bundle = new Bundle();
+                bundle.putSerializable(KEY_EXTRA_DATA, (Serializable) data);
+                mediaIntent.putExtra(EXTRA_DATA, bundle);
+                mContext.startActivity(mediaIntent);
+
+            }else {
                 if (checkPermission()) {
-                    startDownload(v.getTag().toString());
+                    startDownload(data.get(Integer.parseInt(v.getTag().toString())).getSg());
                 } else {
                     requestPermission();
                 }
-
-        }
-
-        @OnClick(R.id.acb_detail)
-        public void downloadFilet(){
-
-            if(checkPermission()){
-
-            } else {
-                requestPermission();
             }
+
         }
+
+
 
 
     }
@@ -165,7 +174,8 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
                 .into(holder.mImImageView);
 
         holder.mNameTextView.setText(objects.getName());
-        holder.mDownloadAppCompatButton.setTag(objects.getBg());
+        holder.mDownloadAppCompatButton.setTag(position);
+        holder.mDetail.setTag(position);
     }
 
 
@@ -185,7 +195,9 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
 
 
 
-
+    /**
+     * Call screen the permission for download
+     */
     private boolean checkPermission(){
         int result = ContextCompat.checkSelfPermission(mContext,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE);
@@ -205,6 +217,9 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
 
     }
 
+    /**
+     * Call intent the Download with put extra
+     */
     private void startDownload(String fileName){
 
         Intent intent = new Intent(mContext, DownloadService.class);

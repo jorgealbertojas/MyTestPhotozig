@@ -1,5 +1,6 @@
 package models;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -7,7 +8,7 @@ import java.util.List;
  * Model for support Json Objects
  */
 
-public class Objects {
+public class Objects implements Serializable {
 
     private String name;
     private String bg;

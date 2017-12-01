@@ -111,7 +111,7 @@ public class MainActivity extends AppCompatActivity implements AdapterObject.Ada
         public void onResponse(Call<ListWrapper<Objects>> call, Response<ListWrapper<Objects>> response) {
             try {
                 if (response.isSuccessful()) {
-                    List<Objects> data = new ArrayList<>();
+                    ArrayList<Objects> data = new ArrayList<>();
 
                     data.addAll(response.body().objects);
                     mPathImage = response.body().assetsLocation;

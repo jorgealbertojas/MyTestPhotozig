@@ -1,11 +1,13 @@
 package models;
 
+import java.io.Serializable;
+
 /**
  * Created by jorge on 30/11/2017.
  * Create Model for support Json Txts
  */
 
-public class Txts {
+public class Txts implements Serializable {
 
     private String txt;
     private String time;
