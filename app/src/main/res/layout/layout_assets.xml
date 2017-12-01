@@ -34,4 +34,33 @@
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginBottom="8dp" />
 
+    <android.support.v7.widget.AppCompatButton
+        android:id="@+id/acb_detail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginTop="8dp"
+        android:background="@color/colorAccent"
+        android:drawableLeft="@mipmap/ic_launcher"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:text="teste"
+        android:textColor="@android:color/white"
+        app:layout_constraintTop_toBottomOf="@+id/acb_download" />
+
+    <android.support.v7.widget.AppCompatButton
+        android:id="@+id/acb_download"
+        android:layout_centerVertical="true"
+        android:text="Start Download"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:background="@color/colorPrimary"
+        android:textColor="@android:color/white"
+        android:drawableLeft="@mipmap/ic_launcher"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/acb_detail"/>
+
+/>
+
 </android.support.constraint.ConstraintLayout>

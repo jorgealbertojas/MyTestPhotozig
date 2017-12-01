@@ -1,25 +1,33 @@
 package adapters;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.widget.AppCompatButton;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.example.jorge.mytestphotozig.R;
 import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
-
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
+import downloads.DownloadService;
 import models.Objects;
+
+import static common.Utility.EXTRA_FILE_NAME;
+import static common.Utility.PERMISSION_REQUEST_CODE;
 
 /**
  * Created by jorge on 30/11/2017.
@@ -31,6 +39,9 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
     private List<Objects> data;
     private String mUrlImage;
     private Context mContext;
+
+
+
 
     /**
      * An on-click handler that we've defined to make it easy for an Activity to interface with
@@ -76,6 +87,11 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
         @BindView(R.id.tv_object_name)
         TextView mNameTextView;
 
+        @BindView(R.id.acb_download)
+        AppCompatButton mDownloadAppCompatButton;
+
+
+
 
         public AdapterObjectViewHolder(View view) {
             super(view);
@@ -83,16 +99,40 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
             view.setOnClickListener(this);
         }
 
-        /**
+/*        *//**
          * This gets called by the child views during a click.
-         */
+         *//*
         @Override
         public void onClick(View v) {
             ButterKnife.bind((Activity) v.getContext());
             int adapterPosition = getAdapterPosition();
             Objects objects = data.get(adapterPosition);
             mClickHandler.onClick(objects);
+        }*/
+
+
+        @OnClick(R.id.acb_download)
+        public void onClick(View v) {
+
+                if (checkPermission()) {
+                    startDownload(v.getTag().toString());
+                } else {
+                    requestPermission();
+                }
+
         }
+
+        @OnClick(R.id.acb_detail)
+        public void downloadFilet(){
+
+            if(checkPermission()){
+
+            } else {
+                requestPermission();
+            }
+        }
+
+
     }
 
     /**
@@ -124,11 +164,9 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
                 .placeholder(R.mipmap.ic_launcher)
                 .into(holder.mImImageView);
 
-
         holder.mNameTextView.setText(objects.getName());
+        holder.mDownloadAppCompatButton.setTag(objects.getBg());
     }
-
-
 
 
     /**
@@ -144,5 +182,37 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
     public List<Objects> getData() {
         return data;
     }
+
+
+
+
+    private boolean checkPermission(){
+        int result = ContextCompat.checkSelfPermission(mContext,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if (result == PackageManager.PERMISSION_GRANTED){
+
+            return true;
+
+        } else {
+
+            return false;
+        }
+    }
+
+    private void requestPermission(){
+
+        ActivityCompat.requestPermissions((Activity) mContext,new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},PERMISSION_REQUEST_CODE);
+
+    }
+
+    private void startDownload(String fileName){
+
+        Intent intent = new Intent(mContext, DownloadService.class);
+        intent.putExtra(EXTRA_FILE_NAME,fileName);
+        mContext.startService(intent);
+
+    }
+
+
 
 }

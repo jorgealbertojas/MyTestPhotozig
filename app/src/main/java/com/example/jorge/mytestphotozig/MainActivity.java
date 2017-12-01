@@ -1,8 +1,7 @@
 package com.example.jorge.mytestphotozig;
 
-import android.content.ContentResolver;
 import android.content.Context;
-import android.database.Cursor;
+import android.content.pm.PackageManager;
 import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -25,7 +24,7 @@ import adapters.AdapterObject;
 import common.FunctionCommon;
 import common.ListWrapper;
 import common.Utility;
-import models.Assets;
+
 import models.Objects;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -33,11 +32,15 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+import static common.Utility.PERMISSION_REQUEST_CODE;
+
+
 public class MainActivity extends AppCompatActivity implements AdapterObject.AdapterObjectOnClickHandler {
 
     private final String KEY_RECYCLER_STATE = "recycler_state";
     private final String KEY_ADAPTER_STATE = "adapter_state";
     private final String KEY_PATH_IMAGE = "path_image";
+
 
     AdapterObject mAdapterObject;
     private InterfaceObject mInterfaceObject;
@@ -192,8 +195,6 @@ public class MainActivity extends AppCompatActivity implements AdapterObject.Ada
     @Override
     protected void onPause() {
         super.onPause();
-
-
         mBundleRecyclerViewState = new Bundle();
         mListState = mRecyclerView.getLayoutManager().onSaveInstanceState();
         mListAdapterObject = (ArrayList<Objects>) mAdapterObject.getData();
@@ -214,5 +215,22 @@ public class MainActivity extends AppCompatActivity implements AdapterObject.Ada
 
         }
     }
+
+    @Override
+    public void  onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_CODE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+
+                } else {
+
+                    //  Snackbar.make(findViewById(R.id.coordinatorLayout),"Permission Denied, Please allow to proceed !", Snackbar.LENGTH_LONG).show();
+
+                }
+                break;
+        }
+    }
+
 
 }
