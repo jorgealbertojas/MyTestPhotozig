@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
@@ -20,7 +21,9 @@ import android.os.Bundle;
 import android.support.v7.app.NotificationCompat;
 import android.view.View;
 import android.widget.Button;
+import android.widget.MediaController;
 import android.widget.Toast;
+import android.widget.VideoView;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlaybackException;
@@ -30,13 +33,18 @@ import com.google.android.exoplayer2.LoadControl;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroupArray;
+import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
 import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
+import com.google.android.exoplayer2.upstream.BandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 import java.util.List;
@@ -51,7 +59,9 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
     private static final int CORRECT_ANSWER_DELAY_MILLIS = 1000;
     private static final String REMAINING_SONGS_KEY = "remaining_songs";
 
-    private SimpleExoPlayer mExoPlayer;
+    private SimpleExoPlayer mExoPlayerAudio;
+    private SimpleExoPlayer mExoPlayerVideo;
+
     private SimpleExoPlayerView mPlayerView;
     private static MediaSessionCompat mMediaSession;
     private PlaybackStateCompat.Builder mStateBuilder;
@@ -60,6 +70,8 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
     private String mNameFile;
     private Bundle mBundle;
     private List<Objects> mData;
+
+    private static  VideoView mVideo;
 
 
     @Override
@@ -77,18 +89,24 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
         mData = (List<Objects>) mBundle.getSerializable(KEY_EXTRA_DATA);
 
         // Initialize the player view.
-        mPlayerView = (SimpleExoPlayerView) findViewById(R.id.playerView);
+        mPlayerView = (SimpleExoPlayerView) findViewById(R.id.sep_playerView_Audio);
+
+        /**
+         * The component for Show video MP4 .
+         */
+        mVideo =(VideoView) findViewById(R.id.vv_video);
 
 
-        // Load the question mark as the background image until the user answers the question.
-        mPlayerView.setDefaultArtwork(BitmapFactory.decodeResource
-                (getResources(), R.mipmap.ic_launcher));
+
+
+
+
 
         // Initialize the Media Session.
         initializeMediaSession();
 
         // Initialize the player.
-        initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString() + mData.get(Integer.parseInt(mNameFile)).getSg()));
+        initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString() + "/" + mData.get(Integer.parseInt(mNameFile)).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString() + "/" + mData.get(Integer.parseInt(mNameFile)).getBg()));
     }
 
     /**
@@ -117,10 +135,6 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
                                 PlaybackStateCompat.ACTION_PLAY_PAUSE);
 
         mMediaSession.setPlaybackState(mStateBuilder.build());
-
-
-        // MySessionCallback has methods that handle callbacks from a media controller.
-        mMediaSession.setCallback(new MySessionCallback());
 
         // Start the Media Session since the activity is active.
         mMediaSession.setActive(true);
@@ -171,31 +185,46 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
                         .setShowActionsInCompactView(0,1));
 
 
+
+
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         mNotificationManager.notify(0, builder.build());
+
+
     }
 
 
     /**
      * Initialize ExoPlayer.
      */
-    private void initializePlayer(Uri mediaUri) {
-        if (mExoPlayer == null) {
+    private void initializePlayer(Uri mediaUriAudio, Uri mediaUriVideo ) {
+        if (mExoPlayerAudio == null && mExoPlayerVideo == null) {
+
+            /**
+             * Create Audio.
+             */
             // Create an instance of the ExoPlayer.
             TrackSelector trackSelector = new DefaultTrackSelector();
             LoadControl loadControl = new DefaultLoadControl();
-            mExoPlayer = ExoPlayerFactory.newSimpleInstance(this, trackSelector, loadControl);
-            mPlayerView.setPlayer(mExoPlayer);
+            mExoPlayerAudio = ExoPlayerFactory.newSimpleInstance(this, trackSelector, loadControl);
+
+
+            mPlayerView.setPlayer(mExoPlayerAudio);
 
             // Set the ExoPlayer.EventListener to this activity.
-            mExoPlayer.addListener(this);
+            mExoPlayerAudio.addListener(this);
 
             // Prepare the MediaSource.
             String userAgent = Util.getUserAgent(this, "ClassicalMusicQuiz");
-            MediaSource mediaSource = new ExtractorMediaSource(mediaUri, new DefaultDataSourceFactory(
+            MediaSource mediaSourceAudio = new ExtractorMediaSource(mediaUriAudio, new DefaultDataSourceFactory(
                     this, userAgent), new DefaultExtractorsFactory(), null, null);
-            mExoPlayer.prepare(mediaSource);
-            mExoPlayer.setPlayWhenReady(true);
+
+
+            PlayLocalVideo(mediaUriVideo.toString());
+
+            mExoPlayerAudio.prepare(mediaSourceAudio);
+            mExoPlayerAudio.setPlayWhenReady(true);
+
         }
     }
 
@@ -205,9 +234,9 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
      */
     private void releasePlayer() {
         mNotificationManager.cancelAll();
-        mExoPlayer.stop();
-        mExoPlayer.release();
-        mExoPlayer = null;
+        mExoPlayerAudio.stop();
+        mExoPlayerAudio.release();
+        mExoPlayerAudio = null;
     }
     /**
      * The OnClick method for all of the answer buttons. The method uses the index of the button
@@ -252,12 +281,16 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
      */
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+
+
         if((playbackState == ExoPlayer.STATE_READY) && playWhenReady){
             mStateBuilder.setState(PlaybackStateCompat.STATE_PLAYING,
-                    mExoPlayer.getCurrentPosition(), 1f);
+                    mExoPlayerAudio.getCurrentPosition(), 1f);
+            mVideo.start();
         } else if((playbackState == ExoPlayer.STATE_READY)){
             mStateBuilder.setState(PlaybackStateCompat.STATE_PAUSED,
-                    mExoPlayer.getCurrentPosition(), 1f);
+                    mExoPlayerAudio.getCurrentPosition(), 1f);
+            mVideo.pause();
         }
         mMediaSession.setPlaybackState(mStateBuilder.build());
         showNotification(mStateBuilder.build());
@@ -271,38 +304,25 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
     public void onPositionDiscontinuity() {
     }
 
-    /**
-     * Media Session Callbacks, where all external clients control the player.
-     */
-    private class MySessionCallback extends MediaSessionCompat.Callback {
-        @Override
-        public void onPlay() {
-            mExoPlayer.setPlayWhenReady(true);
-        }
 
-        @Override
-        public void onPause() {
-            mExoPlayer.setPlayWhenReady(false);
-        }
+    public void PlayLocalVideo(String nameFileVideo)
+    {
 
-        @Override
-        public void onSkipToPrevious() {
-            mExoPlayer.seekTo(0);
-        }
-    }
 
-    /**
-     * Broadcast Receiver registered to receive the MEDIA_BUTTON intent coming from clients.
-     */
-    public static class MediaReceiver extends BroadcastReceiver {
+        MediaController mediaController = new MediaController(this);
+        mediaController.setAnchorView(mVideo);
+        mVideo.setMediaController(mediaController);
+        mVideo.setKeepScreenOn(true);
+        mVideo.setVideoPath(nameFileVideo);
+        mVideo.start();
+        mVideo.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+            @Override
+            public void onPrepared(MediaPlayer mp) {
+                mp.setLooping(true);
+            }
+        });
 
-        public MediaReceiver() {
 
-        }
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            MediaButtonReceiver.handleIntent(mMediaSession, intent);
-        }
+        mVideo.requestFocus();
     }
 }
