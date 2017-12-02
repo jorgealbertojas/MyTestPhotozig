@@ -2,17 +2,10 @@ package com.example.jorge.mytestphotozig;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.graphics.PorterDuff;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Environment;
-import android.os.Handler;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -20,9 +13,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.app.NotificationCompat;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.MediaController;
-import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
@@ -33,25 +25,21 @@ import com.google.android.exoplayer2.LoadControl;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroupArray;
-import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
 import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
-import com.google.android.exoplayer2.upstream.BandwidthMeter;
-import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 import java.util.List;
 import models.Objects;
 
+import static common.Utility.BASE_STORAGE;
 import static common.Utility.EXTRA_DATA;
-import static common.Utility.EXTRA_FILE_NAME;
+import static common.Utility.EXTRA_POSITION;
 import static common.Utility.KEY_EXTRA_DATA;
 
 public class DetailActivity extends AppCompatActivity implements View.OnClickListener, ExoPlayer.EventListener  {
@@ -60,18 +48,20 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
     private static final String REMAINING_SONGS_KEY = "remaining_songs";
 
     private SimpleExoPlayer mExoPlayerAudio;
-    private SimpleExoPlayer mExoPlayerVideo;
 
     private SimpleExoPlayerView mPlayerView;
     private static MediaSessionCompat mMediaSession;
     private PlaybackStateCompat.Builder mStateBuilder;
     private NotificationManager mNotificationManager;
 
-    private String mNameFile;
+    private int mPosition;
     private Bundle mBundle;
     private List<Objects> mData;
 
     private static  VideoView mVideo;
+
+    private ImageButton mNext;
+    private ImageButton mPrior;
 
 
     @Override
@@ -80,7 +70,7 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
         setContentView(R.layout.activity_detail);
 
         Bundle extras = getIntent().getExtras();
-        mNameFile = extras.getString(EXTRA_FILE_NAME);
+        mPosition = extras.getInt(EXTRA_POSITION);
         mBundle = extras.getBundle(EXTRA_DATA);
 
         /**
@@ -97,16 +87,44 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
         mVideo =(VideoView) findViewById(R.id.vv_video);
 
 
+        ImageButton mNext = (ImageButton) findViewById(R.id.ib_next);
+        mNext.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mPosition < mData.size()) {
+                    resetSession();
+                    mPosition++;
+                    initializeMediaSession();
+                    initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
+                }
 
+            }
+        });
 
-
-
+        ImageButton mPrior = (ImageButton) findViewById(R.id.ib_prior);
+        mPrior.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mPosition > 0) {
+                    resetSession();
+                    mPosition--;
+                    initializeMediaSession();
+                    initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
+                }
+            }
+        });
 
         // Initialize the Media Session.
         initializeMediaSession();
 
         // Initialize the player.
-        initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString() + "/" + mData.get(Integer.parseInt(mNameFile)).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString() + "/" + mData.get(Integer.parseInt(mNameFile)).getBg()));
+        initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
+    }
+
+    private void resetSession() {
+        mVideo.stopPlayback();
+        mExoPlayerAudio.stop();
+        mExoPlayerAudio = null;
     }
 
     /**
@@ -132,7 +150,7 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
                         PlaybackStateCompat.ACTION_PLAY |
                                 PlaybackStateCompat.ACTION_PAUSE |
                                 PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS |
-                                PlaybackStateCompat.ACTION_PLAY_PAUSE);
+                                PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_SKIP_TO_NEXT | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
 
         mMediaSession.setPlaybackState(mStateBuilder.build());
 
@@ -198,7 +216,7 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
      * Initialize ExoPlayer.
      */
     private void initializePlayer(Uri mediaUriAudio, Uri mediaUriVideo ) {
-        if (mExoPlayerAudio == null && mExoPlayerVideo == null) {
+        if (mExoPlayerAudio == null) {
 
             /**
              * Create Audio.

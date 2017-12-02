@@ -1,5 +1,7 @@
 package common;
 
+import android.os.Environment;
+
 /**
  * Created by jorge on 30/11/2017.
  * Data for support all App
@@ -22,7 +24,7 @@ public class Utility {
 
 
     /** Cosnt for PUT EXTRA*/
-    public static final String EXTRA_FILE_NAME = "extra_file_name";
+    public static final String EXTRA_POSITION = "extra_position";
     public static final String EXTRA_DATA = "extra_data";
     public static final String EXTRA_DOWNLOAD = "extra_download";
 
@@ -31,6 +33,9 @@ public class Utility {
 
     public static final String BASE_URL_IMAGE = "http://pbmedia.pepblast.com/pz_challenge/";
     public static final String BASE_URL_IMAGE_COMPLEMENT = "assets/";
+
+
+    public static final String BASE_STORAGE =  Environment.DIRECTORY_DOWNLOADS;
 
 
 }

@@ -31,7 +31,7 @@ import downloads.DownloadService;
 import models.Objects;
 
 import static common.Utility.EXTRA_DATA;
-import static common.Utility.EXTRA_FILE_NAME;
+import static common.Utility.EXTRA_POSITION;
 import static common.Utility.KEY_EXTRA_DATA;
 import static common.Utility.PERMISSION_REQUEST_CODE;
 
@@ -123,7 +123,7 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
 
             if (v.getId()== R.id.acb_detail){
                 Intent mediaIntent = new Intent(mContext, DetailActivity.class);
-                mediaIntent.putExtra(EXTRA_FILE_NAME,v.getTag().toString());
+                mediaIntent.putExtra(EXTRA_POSITION,v.getTag().toString());
                 Bundle bundle = new Bundle();
                 bundle.putSerializable(KEY_EXTRA_DATA, (Serializable) data);
                 mediaIntent.putExtra(EXTRA_DATA, bundle);
@@ -132,6 +132,7 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
             }else {
                 if (checkPermission()) {
                     startDownload(data.get(Integer.parseInt(v.getTag().toString())).getSg());
+                    startDownload(data.get(Integer.parseInt(v.getTag().toString())).getBg());
                 } else {
                     requestPermission();
                 }
@@ -223,7 +224,7 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
     private void startDownload(String fileName){
 
         Intent intent = new Intent(mContext, DownloadService.class);
-        intent.putExtra(EXTRA_FILE_NAME,fileName);
+        intent.putExtra(EXTRA_POSITION,fileName);
         mContext.startService(intent);
 
     }

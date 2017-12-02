@@ -28,7 +28,7 @@ import retrofit2.Retrofit;
 import static common.Utility.BASE_URL_IMAGE;
 import static common.Utility.BASE_URL_IMAGE_COMPLEMENT;
 import static common.Utility.EXTRA_DOWNLOAD;
-import static common.Utility.EXTRA_FILE_NAME;
+import static common.Utility.EXTRA_POSITION;
 import static common.Utility.MESSAGE_PROGRESS;
 
 /**
@@ -54,7 +54,7 @@ public class DownloadService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
 
-        String fileName = intent.getStringExtra(EXTRA_FILE_NAME);
+        String fileName = intent.getStringExtra(EXTRA_POSITION);
         mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         mNotificationBuilder = new NotificationCompat.Builder(this)
