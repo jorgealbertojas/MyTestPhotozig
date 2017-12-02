@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.os.Environment;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.widget.Toast;
 import com.example.jorge.mytestphotozig.R;
 
@@ -30,6 +31,7 @@ import static common.Utility.BASE_URL_IMAGE_COMPLEMENT;
 import static common.Utility.EXTRA_DOWNLOAD;
 import static common.Utility.EXTRA_POSITION;
 import static common.Utility.MESSAGE_PROGRESS;
+import static common.Utility.TAG_INFORMATION;
 
 /**
  * Created by jorge on 01/12/2017.
@@ -71,6 +73,8 @@ public class DownloadService extends IntentService {
     /** Init download with name file*/
     private void initDownload(String fileName) {
 
+        Log.i(TAG_INFORMATION,"initDownload");
+
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL_IMAGE)
                 .build();
@@ -92,7 +96,7 @@ public class DownloadService extends IntentService {
 
     /** Show progress download in Notification Service*/
     private void downloadFile(ResponseBody body, String teste) throws IOException {
-
+        Log.i(TAG_INFORMATION,teste);
         int count;
         byte data[] = new byte[1024 * 4];
         long fileSize = body.contentLength();
@@ -161,6 +165,8 @@ public class DownloadService extends IntentService {
         mNotificationBuilder.setProgress(0, 0, false);
         mNotificationBuilder.setContentText("File Downloaded");
         mNotificationManager.notify(0, mNotificationBuilder.build());
+
+        Log.i(TAG_INFORMATION,"onDownloadComplete");
 
     }
 
