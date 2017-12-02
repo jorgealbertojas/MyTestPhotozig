@@ -37,5 +37,7 @@ public class Utility {
 
     public static final String BASE_STORAGE =  Environment.DIRECTORY_DOWNLOADS;
 
+    public static final String TAG_INFORMATION = "information";
+
 
 }

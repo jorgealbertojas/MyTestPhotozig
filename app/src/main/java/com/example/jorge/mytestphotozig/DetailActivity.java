@@ -2,19 +2,25 @@ package com.example.jorge.mytestphotozig;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Environment;
+import android.os.Handler;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.app.NotificationCompat;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.MediaController;
+import android.widget.SeekBar;
+import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
@@ -35,19 +41,28 @@ import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import models.Objects;
 
 import static common.Utility.BASE_STORAGE;
 import static common.Utility.EXTRA_DATA;
 import static common.Utility.EXTRA_POSITION;
 import static common.Utility.KEY_EXTRA_DATA;
+import static common.Utility.TAG_INFORMATION;
 
-public class DetailActivity extends AppCompatActivity implements View.OnClickListener, ExoPlayer.EventListener  {
+public class DetailActivity extends AppCompatActivity implements View.OnClickListener, ExoPlayer.EventListener {
 
     private static final int CORRECT_ANSWER_DELAY_MILLIS = 1000;
     private static final String REMAINING_SONGS_KEY = "remaining_songs";
 
+
+    private double timeElapsed = 0, finalTime = 0;
+
+
     private SimpleExoPlayer mExoPlayerAudio;
+    private Handler durationHandler = new Handler();
+    private SeekBar seekbar;
 
     private SimpleExoPlayerView mPlayerView;
     private static MediaSessionCompat mMediaSession;
@@ -81,6 +96,9 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
         // Initialize the player view.
         mPlayerView = (SimpleExoPlayerView) findViewById(R.id.sep_playerView_Audio);
 
+        seekbar = (SeekBar) findViewById(R.id.exo_progress);
+
+
         /**
          * The component for Show video MP4 .
          */
@@ -96,6 +114,9 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
                     mPosition++;
                     initializeMediaSession();
                     initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
+                }else{
+                    Toast.makeText(view.getContext(), R.string.Information_Data_last, Toast.LENGTH_LONG)
+                            .show();
                 }
 
             }
@@ -110,9 +131,14 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
                     mPosition--;
                     initializeMediaSession();
                     initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
+                }else{
+                    Toast.makeText(view.getContext(), R.string.Information_Data_first, Toast.LENGTH_LONG)
+                            .show();
                 }
             }
         });
+
+
 
         // Initialize the Media Session.
         initializeMediaSession();
@@ -154,6 +180,10 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
 
         mMediaSession.setPlaybackState(mStateBuilder.build());
 
+
+        // MySessionCallback has methods that handle callbacks from a media controller.
+        mMediaSession.setCallback(new MySessionCallback());
+
         // Start the Media Session since the activity is active.
         mMediaSession.setActive(true);
 
@@ -191,7 +221,8 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
         PendingIntent contentPendingIntent = PendingIntent.getActivity
                 (this, 0, new Intent(this, DetailActivity.class), 0);
 
-        builder.setContentTitle(getString(R.string.guess))
+
+        builder.setContentTitle(getString(R.string.app_name))
                 .setContentText(getString(R.string.notification_text))
                 .setContentIntent(contentPendingIntent)
                 .setSmallIcon(R.mipmap.ic_launcher)
@@ -201,6 +232,7 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
                 .setStyle(new NotificationCompat.MediaStyle()
                         .setMediaSession(mMediaSession.getSessionToken())
                         .setShowActionsInCompactView(0,1));
+
 
 
 
@@ -235,16 +267,38 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
             // Prepare the MediaSource.
             String userAgent = Util.getUserAgent(this, "ClassicalMusicQuiz");
             MediaSource mediaSourceAudio = new ExtractorMediaSource(mediaUriAudio, new DefaultDataSourceFactory(
-                    this, userAgent), new DefaultExtractorsFactory(), null, null);
-
+                    this, userAgent), new DefaultExtractorsFactory(), null,null);
 
             PlayLocalVideo(mediaUriVideo.toString());
 
             mExoPlayerAudio.prepare(mediaSourceAudio);
+
+            durationHandler.postDelayed(updateSeekBarTime, 1);
             mExoPlayerAudio.setPlayWhenReady(true);
 
         }
     }
+
+    //handler to change seekBarTime
+    private Runnable updateSeekBarTime = new Runnable() {
+        public void run() {
+            //get current position
+            timeElapsed = mExoPlayerAudio.getCurrentPosition();
+
+            double timeRemaining = finalTime - timeElapsed;
+            long segundos = (-1* TimeUnit.MILLISECONDS.toSeconds((long) timeRemaining));
+
+            Log.i(TAG_INFORMATION,Double.toString(segundos));
+
+            if(segundos == 10){
+                Toast.makeText(seekbar.getContext(), R.string.Information_Data_last, Toast.LENGTH_LONG)
+                        .show();
+            }
+
+            //repeat yourself that again in 100 miliseconds
+            durationHandler.postDelayed(this, 100);
+        }
+    };
 
 
     /**
@@ -283,14 +337,22 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
 
     @Override
     public void onTimelineChanged(Timeline timeline, Object manifest) {
+        if (timeline.getPeriodCount() == 1){
+            Toast.makeText(this.getApplicationContext(), R.string.Information_Data_first, Toast.LENGTH_LONG)
+                    .show();
+
+        }
+        Log.i(TAG_INFORMATION,"onTimelineChanged" +  timeline);
     }
 
     @Override
     public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
+        Log.i(TAG_INFORMATION,"onTracksChanged");
     }
 
     @Override
     public void onLoadingChanged(boolean isLoading) {
+        Log.i(TAG_INFORMATION,"onLoadingChanged");
     }
 
     /**
@@ -318,9 +380,7 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
     public void onPlayerError(ExoPlaybackException error) {
     }
 
-    @Override
-    public void onPositionDiscontinuity() {
-    }
+
 
 
     public void PlayLocalVideo(String nameFileVideo)
@@ -343,4 +403,49 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
 
         mVideo.requestFocus();
     }
+
+
+    /**
+     * Media Session Callbacks, where all external clients control the player.
+     */
+    private class MySessionCallback extends MediaSessionCompat.Callback {
+        @Override
+        public void onPlay() {
+            mExoPlayerAudio.setPlayWhenReady(true);
+
+        }
+
+        @Override
+        public void onPause() {
+            mExoPlayerAudio.setPlayWhenReady(false);
+        }
+
+        @Override
+        public void onSkipToPrevious() {
+            mExoPlayerAudio.seekTo(0);
+        }
+    }
+
+    /**
+     * Broadcast Receiver registered to receive the MEDIA_BUTTON intent coming from clients.
+     */
+    public static class MediaReceiver extends BroadcastReceiver {
+
+        public MediaReceiver() {
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            MediaButtonReceiver.handleIntent(mMediaSession, intent);
+        }
+    }
+
+    @Override
+    public void onPositionDiscontinuity() {
+        Log.i(TAG_INFORMATION,"onPositionDiscontinuity");
+
+    }
+
+
+
 }

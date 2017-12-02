@@ -15,7 +15,7 @@
         android:paddingTop="4dp">
 
         <ImageButton
-            android:id="@+id/ib_next"
+            android:id="@+id/ib_prior"
             style="@style/ExoMediaButton.Rewind" />
         <ImageButton
             android:id="@id/exo_prev"
@@ -30,7 +30,7 @@
             style="@style/ExoMediaButton.Pause" />
 
         <ImageButton
-            android:id="@+id/ib_prior"
+            android:id="@+id/ib_next"
             style="@style/ExoMediaButton.FastForward" />
 
 
