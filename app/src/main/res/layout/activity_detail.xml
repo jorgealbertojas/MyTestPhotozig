@@ -38,7 +38,8 @@
         android:id="@+id/tv_progress_text"
         android:layout_below="@+id/pb_progress"
         android:textAlignment="center"
-        android:text="jjjjjjjjjjj"
+        android:textSize="20sp"
+        android:textColor="@color/colorBlueLight"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 

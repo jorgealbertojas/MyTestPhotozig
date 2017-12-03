@@ -1,16 +1,20 @@
 <resources>
     <string name="app_name">MyTestPhotozig</string>
 
+    <string name="app_name_detail">Detail</string>
+
     <string name="error_message">
         Failed to get results. Please try again.
     </string>
     <string name="Error_Access">No access internet</string>
-    <string name="Error_Access_empty">Data empty! There were problems consuming the movies, please use RESTORE button.</string>
+    <string name="Error_Access_empty">Data empty! There were problems consuming the data.</string>
 
     <string name="Information_Data_last">This is last!</string>
     <string name="Information_Data_first">This is first!</string>
 
 
+    <string name="start_download">Start download</string>
+    <string name="start_play">Start Play</string>
 
 
     <string name="preference_file_key">Score Preferences</string>

@@ -39,5 +39,7 @@ public class Utility {
 
     public static final String TAG_INFORMATION = "information";
 
+    public static final String   FILE_DOWNLOAD_COMPLETE = "File Download Complete";
+
 
 }

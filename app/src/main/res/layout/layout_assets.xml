@@ -1,66 +1,114 @@
-<?xml version="1.0" encoding="utf-8"?>
+
+
+
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
+xmlns:tools="http://schemas.android.com/tools"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:layout_marginTop="8dp"
+xmlns:app="http://schemas.android.com/apk/res-auto">
+<android.support.v7.widget.CardView
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_view"
+    android:layout_gravity="center"
+    android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:minHeight="?android:attr/listPreferredItemHeight">
+    card_view:cardElevation="15dp"
+    android:padding="2dp"
 
-    <ImageView
-        android:id="@+id/iv_objects_im"
-        android:layout_width="0dp"
-        android:layout_height="80dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginLeft="16dp" />
-
-    <TextView
+    card_view:contentPadding="5dp"
+    card_view:cardMaxElevation="2dp"
+    card_view:cardCornerRadius="4dp"
+    android:layout_marginLeft="4dp"
+    card_view:layout_constraintLeft_toLeftOf="parent"
+    card_view:layout_constraintTop_toTopOf="parent"
+    android:layout_marginTop="0dp"
+    android:layout_marginStart="8dp">
+    <android.support.constraint.ConstraintLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
         android:layout_width="wrap_content"
+        android:background="@color/colorPrimaryDark"
         android:layout_height="wrap_content"
-        android:text=""
-        android:id="@+id/tv_object_name"
-        android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-        android:letterSpacing="0.5"
-        android:layout_marginStart="32dp"
-        tools:layout_constraintTop_creator="1"
-        tools:layout_constraintLeft_creator="1"
-        android:layout_marginLeft="8dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginRight="8dp"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginBottom="8dp" />
+        android:layout_margin="2dp">
 
-    <android.support.v7.widget.AppCompatButton
-        android:id="@+id/acb_detail"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_marginTop="8dp"
-        android:background="@color/colorAccent"
-        android:drawableLeft="@mipmap/ic_launcher"
-        android:paddingLeft="20dp"
-        android:paddingRight="20dp"
-        android:text="teste"
-        android:textColor="@android:color/white"
-        app:layout_constraintTop_toBottomOf="@+id/acb_download" />
+        <ImageView
+            android:id="@+id/iv_objects_im"
+            android:layout_width="0dp"
+            android:layout_height="100dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:padding="5dp"
+            android:scaleType="centerCrop"
+            app:layout_constraintBottom_toTopOf="@+id/acb_detail"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/acb_download" />
 
-    <android.support.v7.widget.AppCompatButton
-        android:id="@+id/acb_download"
-        android:layout_centerVertical="true"
-        android:text="Start Download"
-        android:paddingLeft="20dp"
-        android:paddingRight="20dp"
-        android:background="@color/colorPrimary"
-        android:textColor="@android:color/white"
-        android:drawableLeft="@mipmap/ic_launcher"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/acb_detail"/>
+        <TextView
+            android:id="@+id/tv_object_name"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
 
-/>
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:letterSpacing="0.5"
+            android:text="rrrrrr"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:textColor="@color/colorBlueLight"
+            android:textSize="20sp"
+            app:layout_constraintBottom_toTopOf="@+id/acb_detail"
+            app:layout_constraintEnd_toEndOf="@+id/iv_objects_im"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/acb_download"
+            tools:layout_constraintLeft_creator="1"
+            tools:layout_constraintTop_creator="1" />
 
+        <android.support.v7.widget.AppCompatButton
+            android:id="@+id/acb_detail"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_centerVertical="true"
+
+            android:layout_marginBottom="8dp"
+
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:background="@android:color/holo_green_dark"
+            android:drawableLeft="@mipmap/ic_start_play"
+            android:orientation="horizontal"
+            android:padding="5dp"
+            android:text="@string/start_play"
+            android:textColor="@color/colorPrimary"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <android.support.v7.widget.AppCompatButton
+            android:id="@+id/acb_download"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/acb_detail"
+            android:layout_centerVertical="true"
+             android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:background="@color/colorOrange"
+            android:drawableLeft="@mipmap/ic_start_download"
+            android:padding="5dp"
+            android:text="@string/start_download"
+            android:textColor="@color/colorPrimary"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        />
+    </android.support.constraint.ConstraintLayout >
+</android.support.v7.widget.CardView>
 </android.support.constraint.ConstraintLayout>

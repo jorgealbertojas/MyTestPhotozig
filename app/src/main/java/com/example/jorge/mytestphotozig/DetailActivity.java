@@ -67,6 +67,7 @@ import static common.Utility.BASE_STORAGE;
 import static common.Utility.EXTRA_DATA;
 import static common.Utility.EXTRA_DOWNLOAD;
 import static common.Utility.EXTRA_POSITION;
+import static common.Utility.FILE_DOWNLOAD_COMPLETE;
 import static common.Utility.KEY_EXTRA_DATA;
 import static common.Utility.PERMISSION_REQUEST_CODE;
 import static common.Utility.TAG_INFORMATION;
@@ -118,6 +119,10 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
 
         registerReceiver();
 
+
+        /**
+         * Get parameters the other activity.
+         */
         Bundle extras = getIntent().getExtras();
         mPosition = Integer.parseInt(extras.getString(EXTRA_POSITION));
         mBundle = extras.getBundle(EXTRA_DATA);
@@ -183,14 +188,20 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
 
         if (!verifyExistFiles()){
             allStarDownload();
+        }else{
+            initializeMediaSession();
+            initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
+            /**
+             * Put Name Repositorie in  title.
+             */
+            this.setTitle(mData.get(mPosition).getBg());
         }
 
     }
 
-
-
-
-
+    /**
+     * Verify if this files BG and SG they're gone
+     */
     private boolean verifyExistFiles() {
 
         String fileNameWithPathBg = Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg();
@@ -208,8 +219,6 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
 
     }
 
-
-
     /**
      * Call intent the Download with put extra
      */
@@ -223,6 +232,9 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
 
     }
 
+    /**
+     * Reset Session the Audio and the Video
+     */
     private void resetSession() {
         mVideo.stopPlayback();
         mExoPlayerAudio.stop();
@@ -309,10 +321,6 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
                         .setMediaSession(mMediaSession.getSessionToken())
                         .setShowActionsInCompactView(0,1));
 
-
-
-
-
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         mNotificationManager.notify(0, builder.build());
 
@@ -356,7 +364,9 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
         }
     }
 
-    //handler to change seekBarTime
+    /**
+     * Control the time for Put TXTs in TextView with this information.
+     */
     private Runnable updateSeekBarTime = new Runnable() {
         public void run() {
             if (mExoPlayerAudio != null) {
@@ -371,6 +381,7 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
                 String textMessageJson = verifyExistMessage(second);
 
                 if (!textMessageJson.equals("0")) {
+                    mProgressText.setText(textMessageJson);
                     Toast.makeText(seekbar.getContext(), textMessageJson, Toast.LENGTH_LONG)
                             .show();
                 }
@@ -443,12 +454,7 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
 
     @Override
     public void onTimelineChanged(Timeline timeline, Object manifest) {
-/*        if (timeline.getPeriodCount() == 1){
-            Toast.makeText(this.getApplicationContext(), R.string.Information_Data_first, Toast.LENGTH_LONG)
-                    .show();
 
-        }
-        Log.i(TAG_INFORMATION,"onTimelineChanged" +  timeline);*/
     }
 
     @Override
@@ -488,11 +494,11 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
 
 
 
-
+    /**
+     * Play video for play Video.
+     */
     public void PlayLocalVideo(String nameFileVideo)
     {
-
-
         MediaController mediaController = new MediaController(this);
         mediaController.setAnchorView(mVideo);
         mVideo.setMediaController(mediaController);
@@ -553,7 +559,9 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
     }
 
 
-
+    /**
+     * Manager the receiver for support return when finished.
+     */
     private void registerReceiver(){
 
         LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(this);
@@ -563,6 +571,9 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
 
     }
 
+    /**
+     * BroadcastReceiver for wait when download finished.
+     */
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -573,18 +584,16 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
                 mProgressBar.setProgress(download.getProgress());
                 if(download.getProgress() == 100){
 
-                    mProgressText.setText("File Download Complete");
-
 
                     // Initialize the Media Session.
                     initializeMediaSession();
 
                     // Initialize the player.
                     if (verifyExistFiles() ){
+                        mProgressText.setText(FILE_DOWNLOAD_COMPLETE);
+                        mProgressBar.setVisibility(View.INVISIBLE);
                         initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
-
                     }
-
 
                 } else {
 
@@ -595,12 +604,17 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
         }
     };
 
+    /**
+     * Request Permission download for the user .
+     */
     private void requestPermission(){
 
         ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},PERMISSION_REQUEST_CODE);
-
     }
 
+    /**
+     * Request Permission .
+     */
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
@@ -611,19 +625,21 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
                 } else {
 
                     Toast.makeText(this.getApplicationContext(), "bebeto", Toast.LENGTH_LONG);
-                    //Snackbar.make(findViewById(R.id.coordinatorLayout),"Permission Denied, Please allow to proceed !", Snackbar.LENGTH_LONG).show();
-
                 }
                 break;
         }
     }
 
 
-
+    /**
+     * Start download all file SG and BG.
+     */
     private void allStarDownload() {
 
 
         if (FunctionCommon.checkPermission(this)) {
+            mProgressText.setText("");
+            mProgressBar.setVisibility(View.VISIBLE);
             startDownload(mData.get((mPosition)).getSg());
             startDownload(mData.get((mPosition)).getBg());
         } else {
