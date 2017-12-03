@@ -27,6 +27,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import common.FunctionCommon;
 import downloads.DownloadService;
 import models.Objects;
 
@@ -106,7 +107,7 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
 /*        *//**
          * This gets called by the child views during a click.
          *//*
-        @Override
+        @OverrideEXTRA_POSITION
         public void onClick(View v) {
             ButterKnife.bind((Activity) v.getContext());
             int adapterPosition = getAdapterPosition();
@@ -130,7 +131,7 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
                 mContext.startActivity(mediaIntent);
 
             }else {
-                if (checkPermission()) {
+                if (FunctionCommon.checkPermission(mContext)) {
                     startDownload(data.get(Integer.parseInt(v.getTag().toString())).getSg());
                     startDownload(data.get(Integer.parseInt(v.getTag().toString())).getBg());
                 } else {
@@ -196,21 +197,6 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
 
 
 
-    /**
-     * Call screen the permission for download
-     */
-    private boolean checkPermission(){
-        int result = ContextCompat.checkSelfPermission(mContext,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        if (result == PackageManager.PERMISSION_GRANTED){
-
-            return true;
-
-        } else {
-
-            return false;
-        }
-    }
 
     private void requestPermission(){
 

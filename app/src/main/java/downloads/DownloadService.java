@@ -6,7 +6,9 @@ import android.app.IntentService;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.Environment;
+import android.os.ResultReceiver;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -39,9 +41,17 @@ import static common.Utility.TAG_INFORMATION;
  * The ResponseBody object is passed to downloadFile() method which starts the download.
  * The downloaded file is stored in Downloads directory. */
 
-public class DownloadService extends IntentService {
+public class DownloadService extends IntentService  {
 
     public String name;
+
+    public static Intent mIntent;
+
+
+    public static final int STATUS_RUNNING = 0;
+    public static final int STATUS_FINISHED = 1;
+    public static final int STATUS_ERROR = 2;
+
 
     public DownloadService() {
         super("Download Service");
@@ -56,6 +66,8 @@ public class DownloadService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
 
+        this.mIntent = intent;
+
         String fileName = intent.getStringExtra(EXTRA_POSITION);
         mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -67,6 +79,12 @@ public class DownloadService extends IntentService {
         mNotificationManager.notify(0, mNotificationBuilder.build());
 
         initDownload(fileName);
+
+
+
+
+
+
 
     }
 
@@ -155,7 +173,7 @@ public class DownloadService extends IntentService {
     }
 
     /** Download finished and notification finished*/
-    private void onDownloadComplete() {
+    private String onDownloadComplete() {
 
         Download download = new Download();
         download.setProgress(100);
@@ -167,6 +185,8 @@ public class DownloadService extends IntentService {
         mNotificationManager.notify(0, mNotificationBuilder.build());
 
         Log.i(TAG_INFORMATION,"onDownloadComplete");
+
+        return "finished";
 
     }
 

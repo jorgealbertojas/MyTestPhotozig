@@ -1,14 +1,21 @@
 package com.example.jorge.mytestphotozig;
 
+import android.Manifest;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.ResultReceiver;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -19,7 +26,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.MediaController;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
@@ -40,21 +49,37 @@ import com.google.android.exoplayer2.trackselection.TrackSelector;
 import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
+
+import java.io.File;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import common.FunctionCommon;
+import common.Utility;
+import downloads.Download;
+import downloads.DownloadService;
 import models.Objects;
+
 
 import static common.Utility.BASE_STORAGE;
 import static common.Utility.EXTRA_DATA;
+import static common.Utility.EXTRA_DOWNLOAD;
 import static common.Utility.EXTRA_POSITION;
 import static common.Utility.KEY_EXTRA_DATA;
+import static common.Utility.PERMISSION_REQUEST_CODE;
 import static common.Utility.TAG_INFORMATION;
+
+
 
 public class DetailActivity extends AppCompatActivity implements View.OnClickListener, ExoPlayer.EventListener {
 
     private static final int CORRECT_ANSWER_DELAY_MILLIS = 1000;
     private static final String REMAINING_SONGS_KEY = "remaining_songs";
+
+    public static final String MESSAGE_PROGRESS = "message_progress";
+    private static final int PERMISSION_REQUEST_CODE = 1;
 
 
     private double timeElapsed = 0, finalTime = 0;
@@ -78,14 +103,23 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
     private ImageButton mNext;
     private ImageButton mPrior;
 
+    @BindView(R.id.pb_progress)
+    ProgressBar mProgressBar;
+    @BindView(R.id.tv_progress_text)
+    TextView mProgressText;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
 
+        ButterKnife.bind(this);
+
+        registerReceiver();
+
         Bundle extras = getIntent().getExtras();
-        mPosition = extras.getInt(EXTRA_POSITION);
+        mPosition = Integer.parseInt(extras.getString(EXTRA_POSITION));
         mBundle = extras.getBundle(EXTRA_DATA);
 
         /**
@@ -105,46 +139,88 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
         mVideo =(VideoView) findViewById(R.id.vv_video);
 
 
+
         ImageButton mNext = (ImageButton) findViewById(R.id.ib_next);
         mNext.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (mPosition < mData.size()) {
-                    resetSession();
-                    mPosition++;
-                    initializeMediaSession();
+        @Override
+        public void onClick(View view) {
+            if (mPosition < mData.size()) {
+                resetSession();
+                mPosition++;
+                initializeMediaSession();
+                if (verifyExistFiles()) {
                     initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
                 }else{
-                    Toast.makeText(view.getContext(), R.string.Information_Data_last, Toast.LENGTH_LONG)
-                            .show();
+                    allStarDownload();
                 }
-
+            }else{
+                Toast.makeText(view.getContext(), R.string.Information_Data_last, Toast.LENGTH_LONG)
+                        .show();
+                }
             }
         });
 
         ImageButton mPrior = (ImageButton) findViewById(R.id.ib_prior);
         mPrior.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (mPosition > 0) {
-                    resetSession();
-                    mPosition--;
-                    initializeMediaSession();
+        @Override
+        public void onClick(View view) {
+            if (mPosition > 0) {
+                resetSession();
+                mPosition--;
+                initializeMediaSession();
+                if (verifyExistFiles()) {
                     initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
                 }else{
-                    Toast.makeText(view.getContext(), R.string.Information_Data_first, Toast.LENGTH_LONG)
-                            .show();
+                    allStarDownload();
                 }
+            }else{
+                    Toast.makeText(view.getContext(), R.string.Information_Data_first, Toast.LENGTH_LONG)
+                        .show();
+                 }
             }
         });
 
 
+        if (!verifyExistFiles()){
+            allStarDownload();
+        }
 
-        // Initialize the Media Session.
-        initializeMediaSession();
+    }
 
-        // Initialize the player.
-        initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
+
+
+
+
+    private boolean verifyExistFiles() {
+
+        String fileNameWithPathBg = Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg();
+        String fileNameWithPathSg = Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg();
+
+        File fileBg = new File(fileNameWithPathBg);
+        File fileSg = new File(fileNameWithPathSg);
+
+        if (!fileBg.exists() || ! fileSg.exists()) {
+            return false;
+        }else{
+            return true;
+        }
+
+
+    }
+
+
+
+    /**
+     * Call intent the Download with put extra
+     */
+    private void startDownload(String fileName){
+
+        Intent intent = new Intent(this, DownloadService.class);
+        intent.putExtra(EXTRA_POSITION,fileName);
+        this.startService(intent);
+
+
+
     }
 
     private void resetSession() {
@@ -273,6 +349,7 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
 
             mExoPlayerAudio.prepare(mediaSourceAudio);
 
+
             durationHandler.postDelayed(updateSeekBarTime, 1);
             mExoPlayerAudio.setPlayWhenReady(true);
 
@@ -366,12 +443,12 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
 
     @Override
     public void onTimelineChanged(Timeline timeline, Object manifest) {
-        if (timeline.getPeriodCount() == 1){
+/*        if (timeline.getPeriodCount() == 1){
             Toast.makeText(this.getApplicationContext(), R.string.Information_Data_first, Toast.LENGTH_LONG)
                     .show();
 
         }
-        Log.i(TAG_INFORMATION,"onTimelineChanged" +  timeline);
+        Log.i(TAG_INFORMATION,"onTimelineChanged" +  timeline);*/
     }
 
     @Override
@@ -475,6 +552,86 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
 
     }
 
+
+
+    private void registerReceiver(){
+
+        LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(this);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(MESSAGE_PROGRESS);
+        bManager.registerReceiver(broadcastReceiver, intentFilter);
+
+    }
+
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            if(intent.getAction().equals(MESSAGE_PROGRESS)){
+
+                Download download = intent.getParcelableExtra(EXTRA_DOWNLOAD);
+                mProgressBar.setProgress(download.getProgress());
+                if(download.getProgress() == 100){
+
+                    mProgressText.setText("File Download Complete");
+
+
+                    // Initialize the Media Session.
+                    initializeMediaSession();
+
+                    // Initialize the player.
+                    if (verifyExistFiles() ){
+                        initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
+
+                    }
+
+
+                } else {
+
+                    mProgressText.setText(String.format("Downloaded (%d/%d) MB",download.getCurrentFileSize(),download.getTotalFileSize()));
+
+                }
+            }
+        }
+    };
+
+    private void requestPermission(){
+
+        ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},PERMISSION_REQUEST_CODE);
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_CODE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    verifyExistFiles();
+                } else {
+
+                    Toast.makeText(this.getApplicationContext(), "bebeto", Toast.LENGTH_LONG);
+                    //Snackbar.make(findViewById(R.id.coordinatorLayout),"Permission Denied, Please allow to proceed !", Snackbar.LENGTH_LONG).show();
+
+                }
+                break;
+        }
+    }
+
+
+
+    private void allStarDownload() {
+
+
+        if (FunctionCommon.checkPermission(this)) {
+            startDownload(mData.get((mPosition)).getSg());
+            startDownload(mData.get((mPosition)).getBg());
+        } else {
+            requestPermission();
+
+        }
+
+   }
 
 
 }

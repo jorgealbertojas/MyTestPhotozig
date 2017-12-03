@@ -12,6 +12,7 @@
 
 
 
+
     <string name="preference_file_key">Score Preferences</string>
     <string name="notification_text">Press play to hear the piece!</string>
     <string name="sample_list_load_error">Error loading one or more samples!</string>
