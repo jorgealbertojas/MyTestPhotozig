@@ -282,23 +282,52 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
     //handler to change seekBarTime
     private Runnable updateSeekBarTime = new Runnable() {
         public void run() {
-            //get current position
-            timeElapsed = mExoPlayerAudio.getCurrentPosition();
+            if (mExoPlayerAudio != null) {
+                //get current position
+                timeElapsed = mExoPlayerAudio.getCurrentPosition();
 
-            double timeRemaining = finalTime - timeElapsed;
-            long segundos = (-1* TimeUnit.MILLISECONDS.toSeconds((long) timeRemaining));
+                double timeRemaining = finalTime - timeElapsed;
+                String second = Float.toString(1000 * (-1 * TimeUnit.MILLISECONDS.toSeconds((long) timeRemaining)));
 
-            Log.i(TAG_INFORMATION,Double.toString(segundos));
+                Log.i(TAG_INFORMATION, second);
 
-            if(segundos == 10){
-                Toast.makeText(seekbar.getContext(), R.string.Information_Data_last, Toast.LENGTH_LONG)
-                        .show();
+                String textMessageJson = verifyExistMessage(second);
+
+                if (!textMessageJson.equals("0")) {
+                    Toast.makeText(seekbar.getContext(), textMessageJson, Toast.LENGTH_LONG)
+                            .show();
+                }
+
+                //repeat yourself that again in 100 milliseconds
+                durationHandler.postDelayed(this, 100);
             }
-
-            //repeat yourself that again in 100 miliseconds
-            durationHandler.postDelayed(this, 100);
         }
     };
+
+    public String verifyExistMessage(String second){
+        String message = "0";
+        if (mData.get(mPosition).getTxts()  != null) {
+            for (int i = 0; i < mData.get(mPosition).getTxts().size(); i++) {
+                if (convertSecondForMillisecond(mData.get(mPosition).getTxts().get(i).getTime().toString()).equals(second)) {
+                    return mData.get(mPosition).getTxts().get(i).getTxt();
+                }
+                Log.i(TAG_INFORMATION, second + " verifyExistMessage " + convertSecondForMillisecond(mData.get(mPosition).getTxts().get(i).getTime().toString()));
+            }
+        }
+        return message;
+    }
+
+    /**
+     * Release ExoPlayer.
+     */
+
+    public String convertSecondForMillisecond(String second){
+        if (!second.equals("0.0")){
+            return Float.toString(Float.parseFloat(second) * 10000);
+        }else{
+            return "0";
+        }
+    }
 
 
     /**
