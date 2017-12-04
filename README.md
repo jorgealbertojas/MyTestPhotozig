@@ -15,3 +15,10 @@ Executar:
 3 – Pode controlar o áudio tocando pela notificação, dar Play e Pause.
 4 – Todos os requisitos solicitados foram implementados
 
+Rodar a aplicação na maquina.
+1 - Download da IDE do Android Studio
+https://developer.android.com/studio/index.html?hl=pt-br
+2 - Biaxra o ZIP no link: https://github.com/jorgealbertojas/MyTestPhotozig.git
+3 - Escolher no diretorio C:\photozig\MyTestPhotozig\MyTestPhotozig
+4 - Clicar em Run app
+
