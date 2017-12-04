@@ -6,9 +6,7 @@ import android.app.IntentService;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
 import android.os.Environment;
-import android.os.ResultReceiver;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -32,6 +30,7 @@ import static common.Utility.BASE_URL_IMAGE;
 import static common.Utility.BASE_URL_IMAGE_COMPLEMENT;
 import static common.Utility.EXTRA_DOWNLOAD;
 import static common.Utility.EXTRA_POSITION;
+import static common.Utility.EXTRA_POSITION_NUMBER;
 import static common.Utility.MESSAGE_PROGRESS;
 import static common.Utility.TAG_INFORMATION;
 
@@ -43,15 +42,7 @@ import static common.Utility.TAG_INFORMATION;
 
 public class DownloadService extends IntentService  {
 
-    public String name;
-
     public static Intent mIntent;
-
-
-    public static final int STATUS_RUNNING = 0;
-    public static final int STATUS_FINISHED = 1;
-    public static final int STATUS_ERROR = 2;
-
 
     public DownloadService() {
         super("Download Service");
@@ -69,6 +60,8 @@ public class DownloadService extends IntentService  {
         this.mIntent = intent;
 
         String fileName = intent.getStringExtra(EXTRA_POSITION);
+        String position = intent.getStringExtra(EXTRA_POSITION_NUMBER);
+
         mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         mNotificationBuilder = new NotificationCompat.Builder(this)
@@ -78,18 +71,12 @@ public class DownloadService extends IntentService  {
                 .setAutoCancel(true);
         mNotificationManager.notify(0, mNotificationBuilder.build());
 
-        initDownload(fileName);
-
-
-
-
-
-
+        initDownload(fileName, position);
 
     }
 
     /** Init download with name file*/
-    private void initDownload(String fileName) {
+    private void initDownload(String fileName, String position) {
 
         Log.i(TAG_INFORMATION,"initDownload");
 
@@ -102,7 +89,7 @@ public class DownloadService extends IntentService  {
         Call<ResponseBody> request = retrofitInterface.downloadFile(BASE_URL_IMAGE_COMPLEMENT +  fileName);
         try {
 
-            downloadFile(request.execute().body(), fileName);
+            downloadFile(request.execute().body(), fileName, position);
 
         } catch (IOException e) {
 
@@ -113,13 +100,14 @@ public class DownloadService extends IntentService  {
     }
 
     /** Show progress download in Notification Service*/
-    private void downloadFile(ResponseBody body, String teste) throws IOException {
-        Log.i(TAG_INFORMATION,teste);
+    private void downloadFile(ResponseBody body, String fileName, String position) throws IOException {
+        Log.i(TAG_INFORMATION,fileName);
+
         int count;
         byte data[] = new byte[1024 * 4];
         long fileSize = body.contentLength();
         InputStream bis = new BufferedInputStream(body.byteStream(), 1024 * 8);
-        File outputFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), teste);
+        File outputFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
         OutputStream output = new FileOutputStream(outputFile);
         long total = 0;
         long startTime = System.currentTimeMillis();
@@ -141,13 +129,13 @@ public class DownloadService extends IntentService  {
 
                 download.setCurrentFileSize((int) current);
                 download.setProgress(progress);
-                sendNotification(download);
+                sendNotification(download, position);
                 timeCount++;
             }
 
             output.write(data, 0, count);
         }
-        onDownloadComplete();
+        onDownloadComplete(position);
         output.flush();
         output.close();
         bis.close();
@@ -156,28 +144,29 @@ public class DownloadService extends IntentService  {
 
 
     /** Send Notification Service for progress*/
-    private void sendNotification(Download download) {
+    private void sendNotification(Download download, String position) {
 
-        sendIntent(download);
+        sendIntent(download, position);
         mNotificationBuilder.setProgress(100, download.getProgress(), false);
         mNotificationBuilder.setContentText("Downloading file " + download.getCurrentFileSize() + "/" + mTotalFileSize + " MB");
         mNotificationManager.notify(0, mNotificationBuilder.build());
     }
 
     /** Send Notification Service for progress*/
-    private void sendIntent(Download download) {
+    private void sendIntent(Download download, String position) {
 
         Intent intent = new Intent(MESSAGE_PROGRESS);
         intent.putExtra(EXTRA_DOWNLOAD, download);
+        intent.putExtra(EXTRA_POSITION_NUMBER, position);
         LocalBroadcastManager.getInstance(DownloadService.this).sendBroadcast(intent);
     }
 
     /** Download finished and notification finished*/
-    private String onDownloadComplete() {
+    private String onDownloadComplete(String position) {
 
         Download download = new Download();
         download.setProgress(100);
-        sendIntent(download);
+        sendIntent(download, position);
 
         mNotificationManager.cancel(0);
         mNotificationBuilder.setProgress(0, 0, false);

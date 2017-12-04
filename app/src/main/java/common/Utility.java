@@ -23,10 +23,11 @@ public class Utility {
     public static final String MESSAGE_PROGRESS = "message_progress";
 
 
-    /** Cosnt for PUT EXTRA*/
+    /** Const for PUT EXTRA*/
     public static final String EXTRA_POSITION = "extra_position";
     public static final String EXTRA_DATA = "extra_data";
     public static final String EXTRA_DOWNLOAD = "extra_download";
+    public static final String EXTRA_POSITION_NUMBER = "extra_position_number";
 
     public static final String KEY_EXTRA_DATA = "key_extra_data";
 

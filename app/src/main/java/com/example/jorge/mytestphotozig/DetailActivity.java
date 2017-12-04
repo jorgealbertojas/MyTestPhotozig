@@ -12,9 +12,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.ResultReceiver;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -57,7 +55,6 @@ import java.util.concurrent.TimeUnit;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import common.FunctionCommon;
-import common.Utility;
 import downloads.Download;
 import downloads.DownloadService;
 import models.Objects;
@@ -67,23 +64,20 @@ import static common.Utility.BASE_STORAGE;
 import static common.Utility.EXTRA_DATA;
 import static common.Utility.EXTRA_DOWNLOAD;
 import static common.Utility.EXTRA_POSITION;
+import static common.Utility.EXTRA_POSITION_NUMBER;
 import static common.Utility.FILE_DOWNLOAD_COMPLETE;
 import static common.Utility.KEY_EXTRA_DATA;
-import static common.Utility.PERMISSION_REQUEST_CODE;
 import static common.Utility.TAG_INFORMATION;
 
 
 
-public class DetailActivity extends AppCompatActivity implements View.OnClickListener, ExoPlayer.EventListener {
-
-    private static final int CORRECT_ANSWER_DELAY_MILLIS = 1000;
-    private static final String REMAINING_SONGS_KEY = "remaining_songs";
+public class DetailActivity extends AppCompatActivity implements ExoPlayer.EventListener {
 
     public static final String MESSAGE_PROGRESS = "message_progress";
     private static final int PERMISSION_REQUEST_CODE = 1;
 
 
-    private double timeElapsed = 0, finalTime = 0;
+    private double mTimeElapsed = 0, mFinalTime = 0,  mTimeLast = 0;
 
 
     private SimpleExoPlayer mExoPlayerAudio;
@@ -95,7 +89,7 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
     private PlaybackStateCompat.Builder mStateBuilder;
     private NotificationManager mNotificationManager;
 
-    private int mPosition;
+    private int mPosition = 0;
     private Bundle mBundle;
     private List<Objects> mData;
 
@@ -117,7 +111,11 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
 
         ButterKnife.bind(this);
 
-        registerReceiver();
+        try {
+            registerReceiver();
+        } catch (IntentFilter.MalformedMimeTypeException e) {
+            e.printStackTrace();
+        }
 
 
         /**
@@ -143,6 +141,8 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
          */
         mVideo =(VideoView) findViewById(R.id.vv_video);
 
+        Toast.makeText(seekbar.getContext(), R.string.Information_look_control, Toast.LENGTH_LONG)
+                .show();
 
 
         ImageButton mNext = (ImageButton) findViewById(R.id.ib_next);
@@ -153,10 +153,11 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
                 resetSession();
                 mPosition++;
                 initializeMediaSession();
-                if (verifyExistFiles()) {
+                if (verifyExistFiles(mPosition)) {
+                    mProgressText.setText("");
                     initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
                 }else{
-                    allStarDownload();
+                    allStarDownload(Integer.toString(mPosition));
                 }
             }else{
                 Toast.makeText(view.getContext(), R.string.Information_Data_last, Toast.LENGTH_LONG)
@@ -173,10 +174,11 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
                 resetSession();
                 mPosition--;
                 initializeMediaSession();
-                if (verifyExistFiles()) {
+                if (verifyExistFiles(mPosition)) {
+                    mProgressText.setText("");
                     initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
                 }else{
-                    allStarDownload();
+                    allStarDownload(Integer.toString(mPosition));
                 }
             }else{
                     Toast.makeText(view.getContext(), R.string.Information_Data_first, Toast.LENGTH_LONG)
@@ -186,8 +188,8 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
         });
 
 
-        if (!verifyExistFiles()){
-            allStarDownload();
+        if (!verifyExistFiles(mPosition)){
+            allStarDownload(Integer.toString(mPosition));
         }else{
             initializeMediaSession();
             initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
@@ -202,18 +204,21 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
     /**
      * Verify if this files BG and SG they're gone
      */
-    private boolean verifyExistFiles() {
+    private boolean verifyExistFiles(int position) {
+        if (position < mData.size()){
+            String fileNameWithPathBg = Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(position).getBg();
+            String fileNameWithPathSg = Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(position).getSg();
 
-        String fileNameWithPathBg = Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg();
-        String fileNameWithPathSg = Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg();
+            File fileBg = new File(fileNameWithPathBg);
+            File fileSg = new File(fileNameWithPathSg);
 
-        File fileBg = new File(fileNameWithPathBg);
-        File fileSg = new File(fileNameWithPathSg);
-
-        if (!fileBg.exists() || ! fileSg.exists()) {
-            return false;
+            if (!fileBg.exists() || !fileSg.exists()) {
+                return false;
+            } else {
+                return true;
+            }
         }else{
-            return true;
+            return false;
         }
 
 
@@ -222,10 +227,11 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
     /**
      * Call intent the Download with put extra
      */
-    private void startDownload(String fileName){
+    private void startDownload(String fileName, String position){
 
         Intent intent = new Intent(this, DownloadService.class);
         intent.putExtra(EXTRA_POSITION,fileName);
+        intent.putExtra(EXTRA_POSITION_NUMBER, position);
         this.startService(intent);
 
 
@@ -236,9 +242,15 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
      * Reset Session the Audio and the Video
      */
     private void resetSession() {
-        mVideo.stopPlayback();
-        mExoPlayerAudio.stop();
+        if (mVideo != null) {
+            mVideo.stopPlayback();
+        }
+        if (mExoPlayerAudio != null) {
+            mExoPlayerAudio.stop();
+        }
+
         mExoPlayerAudio = null;
+
     }
 
     /**
@@ -371,9 +383,10 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
         public void run() {
             if (mExoPlayerAudio != null) {
                 //get current position
-                timeElapsed = mExoPlayerAudio.getCurrentPosition();
+                mTimeElapsed = mExoPlayerAudio.getCurrentPosition();
+                mTimeLast = mExoPlayerAudio.getDuration();
 
-                double timeRemaining = finalTime - timeElapsed;
+                double timeRemaining = mFinalTime - mTimeElapsed;
                 String second = Float.toString(1000 * (-1 * TimeUnit.MILLISECONDS.toSeconds((long) timeRemaining)));
 
                 Log.i(TAG_INFORMATION, second);
@@ -384,6 +397,14 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
                     mProgressText.setText(textMessageJson);
                     Toast.makeText(seekbar.getContext(), textMessageJson, Toast.LENGTH_LONG)
                             .show();
+                }
+
+
+                Log.i(TAG_INFORMATION, "Last:" + mTimeLast + " Progress:" + mTimeElapsed);
+                if ((mTimeLast < mTimeElapsed) && (mTimeElapsed != 0.0) && (mTimeLast > 0)) {
+                    if (mVideo != null) {
+                        mVideo.pause();
+                    }
                 }
 
                 //repeat yourself that again in 100 milliseconds
@@ -426,17 +447,10 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
         mExoPlayerAudio.stop();
         mExoPlayerAudio.release();
         mExoPlayerAudio = null;
+        mVideo.stopPlayback();
+        mVideo = null;
     }
-    /**
-     * The OnClick method for all of the answer buttons. The method uses the index of the button
-     * in button array to to get the ID of the sample from the array of question IDs. It also
-     * toggles the UI to show the correct answer.
-     */
-    @Override
-    public void onClick(View v) {
 
-
-    }
 
 
     /**
@@ -501,19 +515,21 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
     {
         MediaController mediaController = new MediaController(this);
         mediaController.setAnchorView(mVideo);
+        mediaController.setVisibility(View.INVISIBLE);
+
         mVideo.setMediaController(mediaController);
         mVideo.setKeepScreenOn(true);
         mVideo.setVideoPath(nameFileVideo);
         mVideo.start();
         mVideo.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            @Override
+             @Override
             public void onPrepared(MediaPlayer mp) {
-                mp.setLooping(true);
-            }
+                    mp.setLooping(true);
+                }
         });
 
-
         mVideo.requestFocus();
+
     }
 
 
@@ -562,12 +578,18 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
     /**
      * Manager the receiver for support return when finished.
      */
-    private void registerReceiver(){
+    private void registerReceiver() throws IntentFilter.MalformedMimeTypeException {
+
+        Bundle extras = getIntent().getExtras();
+        mPosition =  Integer.parseInt(extras.getString(EXTRA_POSITION));
 
         LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(this);
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(MESSAGE_PROGRESS);
         bManager.registerReceiver(broadcastReceiver, intentFilter);
+
+
+
 
     }
 
@@ -578,21 +600,26 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
         @Override
         public void onReceive(Context context, Intent intent) {
 
+
             if(intent.getAction().equals(MESSAGE_PROGRESS)){
+
+
+                int position = Integer.parseInt(intent.getStringExtra(EXTRA_POSITION_NUMBER).toString());
 
                 Download download = intent.getParcelableExtra(EXTRA_DOWNLOAD);
                 mProgressBar.setProgress(download.getProgress());
                 if(download.getProgress() == 100){
 
 
-                    // Initialize the Media Session.
-                    initializeMediaSession();
 
                     // Initialize the player.
-                    if (verifyExistFiles() ){
+                    if (verifyExistFiles(position) ){
                         mProgressText.setText(FILE_DOWNLOAD_COMPLETE);
                         mProgressBar.setVisibility(View.INVISIBLE);
-                        initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(mPosition).getBg()));
+
+                        resetSession();
+                        initializeMediaSession();
+                        initializePlayer(Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(position).getSg()), Uri.parse(Environment.getExternalStoragePublicDirectory(BASE_STORAGE).toString() + "/" + mData.get(position).getBg()));
                     }
 
                 } else {
@@ -621,10 +648,10 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
             case PERMISSION_REQUEST_CODE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
-                    verifyExistFiles();
+                    verifyExistFiles(mPosition);
                 } else {
 
-                    Toast.makeText(this.getApplicationContext(), "bebeto", Toast.LENGTH_LONG);
+                    Toast.makeText(this.getApplicationContext(), TAG_INFORMATION, Toast.LENGTH_LONG);
                 }
                 break;
         }
@@ -634,14 +661,21 @@ public class DetailActivity extends AppCompatActivity implements View.OnClickLis
     /**
      * Start download all file SG and BG.
      */
-    private void allStarDownload() {
+    private void allStarDownload(String position) {
 
 
         if (FunctionCommon.checkPermission(this)) {
-            mProgressText.setText("");
-            mProgressBar.setVisibility(View.VISIBLE);
-            startDownload(mData.get((mPosition)).getSg());
-            startDownload(mData.get((mPosition)).getBg());
+            if (!position.equals("")){
+                if (Integer.parseInt(position) < mData.size()) {
+                    mProgressText.setText("");
+                    mProgressBar.setVisibility(View.VISIBLE);
+                    startDownload(mData.get((mPosition)).getSg(), position);
+                    startDownload(mData.get((mPosition)).getBg(), position);
+                }else{
+                    Toast.makeText(this, R.string.Information_Data_last, Toast.LENGTH_LONG)
+                            .show();
+                }
+            }
         } else {
             requestPermission();
 

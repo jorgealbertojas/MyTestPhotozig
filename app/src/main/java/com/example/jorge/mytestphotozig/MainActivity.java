@@ -12,19 +12,14 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
 import java.util.ArrayList;
-import java.util.List;
-
 import Interfaces.InterfaceObject;
 import adapters.AdapterObject;
 import common.FunctionCommon;
 import common.ListWrapper;
 import common.Utility;
-
 import models.Objects;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -225,7 +220,6 @@ public class MainActivity extends AppCompatActivity implements AdapterObject.Ada
 
                 } else {
 
-                    //  Snackbar.make(findViewById(R.id.coordinatorLayout),"Permission Denied, Please allow to proceed !", Snackbar.LENGTH_LONG).show();
 
                 }
                 break;

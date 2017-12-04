@@ -4,10 +4,8 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.AppCompatButton;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -15,24 +13,22 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-
+import android.widget.Toast;
 import com.example.jorge.mytestphotozig.DetailActivity;
 import com.example.jorge.mytestphotozig.R;
 import com.squareup.picasso.Picasso;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import common.FunctionCommon;
 import downloads.DownloadService;
 import models.Objects;
-
 import static common.Utility.EXTRA_DATA;
 import static common.Utility.EXTRA_POSITION;
+import static common.Utility.EXTRA_POSITION_NUMBER;
 import static common.Utility.KEY_EXTRA_DATA;
 import static common.Utility.PERMISSION_REQUEST_CODE;
 
@@ -46,7 +42,7 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
     private List<Objects> data;
     private String mUrlImage;
     private Context mContext;
-
+    private String mPosition = "0";
     private static AdapterObjectOnClickHandler mClickHandler;
 
 
@@ -104,19 +100,6 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
             view.setOnClickListener(this);
         }
 
-/*        *//**
-         * This gets called by the child views during a click.
-         *//*
-        @OverrideEXTRA_POSITION
-        public void onClick(View v) {
-            ButterKnife.bind((Activity) v.getContext());
-            int adapterPosition = getAdapterPosition();
-            Objects objects = data.get(adapterPosition);
-            mClickHandler.onClick(objects);
-        }*/
-
-
-
 
         @OnClick({R.id.acb_download, R.id.acb_detail })
         public void onClick(View v) {
@@ -124,16 +107,18 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
 
             if (v.getId()== R.id.acb_detail){
                 Intent mediaIntent = new Intent(mContext, DetailActivity.class);
+
                 mediaIntent.putExtra(EXTRA_POSITION,v.getTag().toString());
                 Bundle bundle = new Bundle();
                 bundle.putSerializable(KEY_EXTRA_DATA, (Serializable) data);
                 mediaIntent.putExtra(EXTRA_DATA, bundle);
                 mContext.startActivity(mediaIntent);
 
-            }else {
+            }else if (v.getId()== R.id.acb_download){
                 if (FunctionCommon.checkPermission(mContext)) {
-                    startDownload(data.get(Integer.parseInt(v.getTag().toString())).getSg());
-                    startDownload(data.get(Integer.parseInt(v.getTag().toString())).getBg());
+                    Toast.makeText(mContext, R.string.Information_look_download, Toast.LENGTH_SHORT).show();
+                    startDownload(data.get(Integer.parseInt(v.getTag().toString())).getSg(),mPosition);
+                    startDownload(data.get(Integer.parseInt(v.getTag().toString())).getBg(),mPosition);
                 } else {
                     requestPermission();
                 }
@@ -207,10 +192,11 @@ public class AdapterObject extends RecyclerView.Adapter<AdapterObject.AdapterObj
     /**
      * Call intent the Download with put extra
      */
-    private void startDownload(String fileName){
+    private void startDownload(String fileName, String position){
 
         Intent intent = new Intent(mContext, DownloadService.class);
         intent.putExtra(EXTRA_POSITION,fileName);
+        intent.putExtra(EXTRA_POSITION_NUMBER,position);
         mContext.startService(intent);
 
     }
